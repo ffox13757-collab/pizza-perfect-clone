@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Product } from '@/types/database';
+import { ImageUpload } from './ImageUpload';
 
 export function AdminProducts() {
   const { data: products, isLoading } = useAllProducts();
@@ -182,11 +183,20 @@ export function AdminProducts() {
                 </div>
               </div>
               <div>
-                <Label>URL da Imagem</Label>
+                <Label>Imagem do Produto</Label>
+                <div className="mt-2">
+                  <ImageUpload
+                    value={formData.image_url}
+                    onChange={(url) => setFormData({ ...formData, image_url: url })}
+                    folder="products"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Ou cole uma URL:</p>
                 <Input
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   placeholder="https://..."
+                  className="mt-1"
                 />
               </div>
               <div className="flex items-center justify-between">

@@ -2,6 +2,8 @@ import { Button } from '@/components/ui/button';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import heroPizzaImage from '@/assets/hero-pizza.jpg';
+import pizzaMargheritaImage from '@/assets/pizza-margherita.jpg';
 
 export function HeroSection() {
   const { data: settings } = useSiteSettings();
@@ -72,7 +74,7 @@ export function HeroSection() {
             <div className="relative w-full aspect-square max-w-lg mx-auto">
               <div className="absolute inset-0 bg-gradient-hero rounded-full blur-3xl opacity-20" />
               <img
-                src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=600&fit=crop"
+                src={pizzaMargheritaImage}
                 alt="Pizza deliciosa"
                 className="relative w-full h-full object-cover rounded-full shadow-2xl"
               />
