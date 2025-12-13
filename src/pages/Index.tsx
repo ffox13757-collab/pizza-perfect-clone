@@ -3,11 +3,9 @@ import { Footer } from '@/components/layout/Footer';
 import { HeroSection } from '@/components/home/HeroSection';
 import { FeaturedSection } from '@/components/home/FeaturedSection';
 import { AboutSection } from '@/components/home/AboutSection';
-import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
 
 const Index = () => {
-  const { data: settings } = useSiteSettings();
-
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -17,6 +15,7 @@ const Index = () => {
         <AboutSection />
       </main>
       <Footer />
+      <WhatsAppButton />
     </div>
   );
 };
