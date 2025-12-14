@@ -10,7 +10,9 @@ import {
   Palette, 
   Loader2,
   LayoutDashboard,
-  ArrowLeft
+  ArrowLeft,
+  Ruler,
+  Circle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AdminSettings } from '@/components/admin/AdminSettings';
@@ -18,12 +20,16 @@ import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminCategories } from '@/components/admin/AdminCategories';
 import { AdminOrders } from '@/components/admin/AdminOrders';
 import { AdminTheme } from '@/components/admin/AdminTheme';
+import { AdminPizzaSizes } from '@/components/admin/AdminPizzaSizes';
+import { AdminPizzaBorders } from '@/components/admin/AdminPizzaBorders';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/settings', label: 'Configurações', icon: Settings },
   { path: '/admin/products', label: 'Produtos', icon: Pizza },
   { path: '/admin/categories', label: 'Categorias', icon: FolderOpen },
+  { path: '/admin/sizes', label: 'Tamanhos', icon: Ruler },
+  { path: '/admin/borders', label: 'Bordas', icon: Circle },
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingBag },
   { path: '/admin/theme', label: 'Tema & Cores', icon: Palette },
 ];
@@ -165,6 +171,8 @@ export default function AdminPage() {
             <Route path="/settings" element={<AdminSettings />} />
             <Route path="/products" element={<AdminProducts />} />
             <Route path="/categories" element={<AdminCategories />} />
+            <Route path="/sizes" element={<AdminPizzaSizes />} />
+            <Route path="/borders" element={<AdminPizzaBorders />} />
             <Route path="/orders" element={<AdminOrders />} />
             <Route path="/theme" element={<AdminTheme />} />
           </Routes>
