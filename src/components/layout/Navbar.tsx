@@ -42,6 +42,9 @@ export function Navbar() {
             <Link to="/menu" className="text-foreground/80 hover:text-primary transition-colors font-medium">
               Cardápio
             </Link>
+            <Link to="/montar-pizza" className="text-foreground/80 hover:text-primary transition-colors font-medium">
+              Monte sua Pizza
+            </Link>
             <Link to="/#about" className="text-foreground/80 hover:text-primary transition-colors font-medium">
               Sobre
             </Link>
@@ -125,6 +128,13 @@ export function Navbar() {
                 onClick={() => setIsOpen(false)}
               >
                 Cardápio
+              </Link>
+              <Link
+                to="/montar-pizza"
+                className="text-foreground/80 hover:text-primary transition-colors font-medium py-2"
+                onClick={() => setIsOpen(false)}
+              >
+                Monte sua Pizza
               </Link>
               <Link
                 to="/#about"
