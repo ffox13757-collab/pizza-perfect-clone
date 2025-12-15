@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { PaymentSelector } from '@/components/checkout/PaymentSelector';
+import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
 import { toast } from 'sonner';
 
 const defaultPizzaImage = 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=100&h=100&fit=crop';
@@ -13,6 +16,10 @@ const defaultPizzaImage = 'https://images.unsplash.com/photo-1574071318508-1cdba
 export default function CartPage() {
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
   const { data: settings } = useSiteSettings();
+  const { data: paymentMethods, isLoading: methodsLoading } = usePaymentMethods();
+  
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
+  const [changeFor, setChangeFor] = useState('');
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -26,11 +33,26 @@ export default function CartPage() {
   const finalTotal = total + deliveryFee;
 
   const handleWhatsAppOrder = () => {
+    if (!selectedPayment) {
+      toast.error('Selecione uma forma de pagamento');
+      return;
+    }
+
+    if (selectedPayment.requires_change && changeFor && parseFloat(changeFor) < finalTotal) {
+      toast.error('O valor do troco deve ser maior que o total do pedido');
+      return;
+    }
+
     const orderItems = items.map(
       (item) => `• ${item.quantity}x ${item.product.name} - ${formatPrice(item.product.price * item.quantity)}`
     ).join('\n');
 
-    const message = `🍕 *Novo Pedido - ${settings?.site_name || "Mom's Pizza"}*\n\n${orderItems}\n\n📦 Subtotal: ${formatPrice(total)}\n🚚 Entrega: ${deliveryFee === 0 ? 'Grátis!' : formatPrice(deliveryFee)}\n\n💰 *Total: ${formatPrice(finalTotal)}*`;
+    let paymentInfo = `💳 Pagamento: ${selectedPayment.name}`;
+    if (selectedPayment.requires_change && changeFor) {
+      paymentInfo += `\n💵 Troco para: ${formatPrice(parseFloat(changeFor))}`;
+    }
+
+    const message = `🍕 *Novo Pedido - ${settings?.site_name || "Mom's Pizza"}*\n\n${orderItems}\n\n📦 Subtotal: ${formatPrice(total)}\n🚚 Entrega: ${deliveryFee === 0 ? 'Grátis!' : formatPrice(deliveryFee)}\n\n${paymentInfo}\n\n💰 *Total: ${formatPrice(finalTotal)}*`;
     
     const whatsappUrl = `https://wa.me/${settings?.whatsapp || '5511999999999'}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -155,6 +177,22 @@ export default function CartPage() {
                     Limpar carrinho
                   </Button>
                 </div>
+
+                {/* Payment Methods */}
+                {methodsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : paymentMethods && paymentMethods.length > 0 && (
+                  <PaymentSelector
+                    methods={paymentMethods}
+                    selectedMethod={selectedPayment}
+                    onSelect={setSelectedPayment}
+                    changeFor={changeFor}
+                    onChangeForUpdate={setChangeFor}
+                    totalAmount={finalTotal}
+                  />
+                )}
               </div>
 
               {/* Summary */}
