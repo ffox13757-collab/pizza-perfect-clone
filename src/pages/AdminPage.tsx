@@ -12,7 +12,8 @@ import {
   LayoutDashboard,
   ArrowLeft,
   Ruler,
-  Circle
+  Circle,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AdminSettings } from '@/components/admin/AdminSettings';
@@ -22,6 +23,7 @@ import { AdminOrders } from '@/components/admin/AdminOrders';
 import { AdminTheme } from '@/components/admin/AdminTheme';
 import { AdminPizzaSizes } from '@/components/admin/AdminPizzaSizes';
 import { AdminPizzaBorders } from '@/components/admin/AdminPizzaBorders';
+import { AdminPaymentMethods } from '@/components/admin/AdminPaymentMethods';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,6 +33,7 @@ const navItems = [
   { path: '/admin/sizes', label: 'Tamanhos', icon: Ruler },
   { path: '/admin/borders', label: 'Bordas', icon: Circle },
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingBag },
+  { path: '/admin/payments', label: 'Pagamentos', icon: CreditCard },
   { path: '/admin/theme', label: 'Tema & Cores', icon: Palette },
 ];
 
@@ -174,6 +177,7 @@ export default function AdminPage() {
             <Route path="/sizes" element={<AdminPizzaSizes />} />
             <Route path="/borders" element={<AdminPizzaBorders />} />
             <Route path="/orders" element={<AdminOrders />} />
+            <Route path="/payments" element={<AdminPaymentMethods />} />
             <Route path="/theme" element={<AdminTheme />} />
           </Routes>
         </div>

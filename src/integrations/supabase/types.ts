@@ -94,40 +94,85 @@ export type Database = {
       }
       orders: {
         Row: {
+          change_for: number | null
           created_at: string
           customer_address: string
           customer_name: string
           customer_phone: string
           id: string
           notes: string | null
+          payment_method: string | null
           status: string | null
           total_amount: number
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          change_for?: number | null
           created_at?: string
           customer_address: string
           customer_name: string
           customer_phone: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
           status?: string | null
           total_amount: number
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          change_for?: number | null
           created_at?: string
           customer_address?: string
           customer_name?: string
           customer_phone?: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
           status?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          requires_change: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          requires_change?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          requires_change?: boolean | null
+          updated_at?: string
         }
         Relationships: []
       }
