@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_zones: {
+        Row: {
+          created_at: string
+          delivery_fee: number
+          display_order: number | null
+          estimated_time_max: number
+          estimated_time_min: number
+          id: string
+          is_active: boolean | null
+          name: string
+          neighborhoods: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_fee?: number
+          display_order?: number | null
+          estimated_time_max?: number
+          estimated_time_min?: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          neighborhoods?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_fee?: number
+          display_order?: number | null
+          estimated_time_max?: number
+          estimated_time_min?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          neighborhoods?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -99,8 +138,11 @@ export type Database = {
           customer_address: string
           customer_name: string
           customer_phone: string
+          delivery_fee: number | null
+          delivery_zone_id: string | null
           id: string
           notes: string | null
+          order_type: string | null
           payment_method: string | null
           status: string | null
           total_amount: number
@@ -113,8 +155,11 @@ export type Database = {
           customer_address: string
           customer_name: string
           customer_phone: string
+          delivery_fee?: number | null
+          delivery_zone_id?: string | null
           id?: string
           notes?: string | null
+          order_type?: string | null
           payment_method?: string | null
           status?: string | null
           total_amount: number
@@ -127,15 +172,26 @@ export type Database = {
           customer_address?: string
           customer_name?: string
           customer_phone?: string
+          delivery_fee?: number | null
+          delivery_zone_id?: string | null
           id?: string
           notes?: string | null
+          order_type?: string | null
           payment_method?: string | null
           status?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_zones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_methods: {
         Row: {
