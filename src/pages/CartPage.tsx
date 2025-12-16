@@ -8,7 +8,9 @@ import { Link } from 'react-router-dom';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { PaymentSelector } from '@/components/checkout/PaymentSelector';
+import { DeliverySelector } from '@/components/checkout/DeliverySelector';
 import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
+import { DeliveryZone } from '@/hooks/useDeliveryZones';
 import { toast } from 'sonner';
 
 const defaultPizzaImage = 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=100&h=100&fit=crop';
@@ -20,6 +22,8 @@ export default function CartPage() {
   
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
   const [changeFor, setChangeFor] = useState('');
+  const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
+  const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -29,12 +33,17 @@ export default function CartPage() {
   };
 
   const total = getTotalPrice();
-  const deliveryFee = total >= 50 ? 0 : 5;
+  const deliveryFee = orderType === 'pickup' ? 0 : (selectedZone?.delivery_fee || 0);
   const finalTotal = total + deliveryFee;
 
   const handleWhatsAppOrder = () => {
     if (!selectedPayment) {
       toast.error('Selecione uma forma de pagamento');
+      return;
+    }
+
+    if (orderType === 'delivery' && !selectedZone) {
+      toast.error('Selecione uma zona de entrega');
       return;
     }
 
@@ -52,7 +61,11 @@ export default function CartPage() {
       paymentInfo += `\n💵 Troco para: ${formatPrice(parseFloat(changeFor))}`;
     }
 
-    const message = `🍕 *Novo Pedido - ${settings?.site_name || "Mom's Pizza"}*\n\n${orderItems}\n\n📦 Subtotal: ${formatPrice(total)}\n🚚 Entrega: ${deliveryFee === 0 ? 'Grátis!' : formatPrice(deliveryFee)}\n\n${paymentInfo}\n\n💰 *Total: ${formatPrice(finalTotal)}*`;
+    const deliveryInfo = orderType === 'pickup' 
+      ? '🏪 *Retirada no local*' 
+      : `🚚 *Entrega - ${selectedZone?.name}*\n⏱️ Tempo estimado: ${selectedZone?.estimated_time_min}-${selectedZone?.estimated_time_max} min`;
+
+    const message = `🍕 *Novo Pedido - ${settings?.site_name || "Mom's Pizza"}*\n\n${orderItems}\n\n${deliveryInfo}\n\n📦 Subtotal: ${formatPrice(total)}\n🚚 Taxa de entrega: ${deliveryFee === 0 ? 'Grátis!' : formatPrice(deliveryFee)}\n\n${paymentInfo}\n\n💰 *Total: ${formatPrice(finalTotal)}*`;
     
     const whatsappUrl = `https://wa.me/${settings?.whatsapp || '5511999999999'}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -178,6 +191,14 @@ export default function CartPage() {
                   </Button>
                 </div>
 
+                {/* Delivery Selector */}
+                <DeliverySelector
+                  orderType={orderType}
+                  selectedZone={selectedZone}
+                  onOrderTypeChange={setOrderType}
+                  onZoneChange={setSelectedZone}
+                />
+
                 {/* Payment Methods */}
                 {methodsLoading ? (
                   <div className="flex justify-center py-8">
@@ -206,16 +227,20 @@ export default function CartPage() {
                       <span className="font-medium">{formatPrice(total)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Entrega</span>
-                      {deliveryFee === 0 ? (
-                        <span className="text-accent font-medium">Grátis! 🎉</span>
+                      <span className="text-muted-foreground">
+                        {orderType === 'pickup' ? 'Retirada' : 'Entrega'}
+                      </span>
+                      {orderType === 'pickup' ? (
+                        <span className="text-accent font-medium">Sem taxa 🎉</span>
+                      ) : deliveryFee === 0 ? (
+                        <span className="text-muted-foreground">Selecione a zona</span>
                       ) : (
                         <span className="font-medium">{formatPrice(deliveryFee)}</span>
                       )}
                     </div>
-                    {deliveryFee > 0 && (
+                    {selectedZone && (
                       <p className="text-xs text-muted-foreground bg-muted p-2 rounded-lg">
-                        💡 Faltam {formatPrice(50 - total)} para entrega grátis!
+                        ⏱️ {selectedZone.estimated_time_min}-{selectedZone.estimated_time_max} min
                       </p>
                     )}
                   </div>
