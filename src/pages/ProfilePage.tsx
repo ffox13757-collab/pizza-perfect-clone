@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useUpdateProfile, useCustomerOrders } from '@/hooks/useProfile';
+import { useRealtimeOrders, OrderStatus } from '@/hooks/useOrders';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -9,22 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, User, Package, MapPin, Phone, Mail, Save, Clock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2, User, Package, MapPin, Phone, Mail, Save, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending: { label: 'Pendente', variant: 'secondary' },
-  confirmed: { label: 'Confirmado', variant: 'default' },
-  preparing: { label: 'Preparando', variant: 'default' },
-  ready: { label: 'Pronto', variant: 'default' },
-  delivering: { label: 'Em Entrega', variant: 'default' },
-  delivered: { label: 'Entregue', variant: 'outline' },
-  cancelled: { label: 'Cancelado', variant: 'destructive' },
-};
+import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
+import { OrderTracker } from '@/components/orders/OrderTracker';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -32,6 +25,9 @@ export default function ProfilePage() {
   const { data: orders, isLoading: ordersLoading } = useCustomerOrders();
   const updateProfile = useUpdateProfile();
   const navigate = useNavigate();
+  
+  // Enable realtime updates
+  useRealtimeOrders();
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -181,49 +177,59 @@ export default function ProfilePage() {
                     </div>
                   ) : orders && orders.length > 0 ? (
                     <div className="space-y-4">
-                      {orders.map((order) => {
-                        const status = statusMap[order.status || 'pending'];
-                        return (
-                          <div
-                            key={order.id}
-                            className="border rounded-lg p-4 space-y-3"
-                          >
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                {format(new Date(order.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
-                              </div>
-                              <Badge variant={status.variant}>{status.label}</Badge>
+                      {orders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="border rounded-lg p-4 space-y-3"
+                        >
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="text-sm text-muted-foreground">
+                              {format(new Date(order.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                             </div>
-
-                            <div className="space-y-1">
-                              {order.order_items?.map((item) => (
-                                <div key={item.id} className="flex justify-between text-sm">
-                                  <span>
-                                    {item.quantity}x {item.product_name}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {formatPrice(item.unit_price * item.quantity)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-
-                            <div className="flex justify-between items-center pt-2 border-t">
-                              <span className="font-medium">Total</span>
-                              <span className="font-bold text-primary">
-                                {formatPrice(order.total_amount)}
-                              </span>
-                            </div>
-
-                            {order.notes && (
-                              <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
-                                Obs: {order.notes}
-                              </p>
-                            )}
+                            <OrderStatusBadge status={(order.status || 'pending') as OrderStatus} size="sm" />
                           </div>
-                        );
-                      })}
+
+                          <div className="space-y-1">
+                            {order.order_items?.map((item) => (
+                              <div key={item.id} className="flex justify-between text-sm">
+                                <span>
+                                  {item.quantity}x {item.product_name}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {formatPrice(item.unit_price * item.quantity)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2 border-t">
+                            <span className="font-medium">Total</span>
+                            <span className="font-bold text-primary">
+                              {formatPrice(order.total_amount)}
+                            </span>
+                          </div>
+
+                          {/* Order Tracking Dialog */}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="w-full">
+                                <Eye className="h-4 w-4 mr-2" />
+                                Acompanhar Pedido
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                              <DialogHeader>
+                                <DialogTitle>Acompanhar Pedido</DialogTitle>
+                              </DialogHeader>
+                              <OrderTracker 
+                                orderId={order.id} 
+                                currentStatus={(order.status || 'pending') as OrderStatus}
+                                orderType={(order.order_type as 'delivery' | 'pickup') || 'delivery'}
+                              />
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
