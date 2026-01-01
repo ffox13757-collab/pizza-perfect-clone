@@ -14,7 +14,9 @@ import {
   Ruler,
   Circle,
   CreditCard,
-  MapPin
+  MapPin,
+  Tag,
+  Trophy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AdminSettings } from '@/components/admin/AdminSettings';
@@ -26,6 +28,8 @@ import { AdminPizzaSizes } from '@/components/admin/AdminPizzaSizes';
 import { AdminPizzaBorders } from '@/components/admin/AdminPizzaBorders';
 import { AdminPaymentMethods } from '@/components/admin/AdminPaymentMethods';
 import { AdminDeliveryZones } from '@/components/admin/AdminDeliveryZones';
+import { AdminCoupons } from '@/components/admin/AdminCoupons';
+import { AdminLoyalty } from '@/components/admin/AdminLoyalty';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,6 +41,8 @@ const navItems = [
   { path: '/admin/orders', label: 'Pedidos', icon: ShoppingBag },
   { path: '/admin/payments', label: 'Pagamentos', icon: CreditCard },
   { path: '/admin/delivery', label: 'Zonas Entrega', icon: MapPin },
+  { path: '/admin/coupons', label: 'Cupons', icon: Tag },
+  { path: '/admin/loyalty', label: 'Fidelidade', icon: Trophy },
   { path: '/admin/theme', label: 'Tema & Cores', icon: Palette },
 ];
 
@@ -182,6 +188,8 @@ export default function AdminPage() {
             <Route path="/orders" element={<AdminOrders />} />
             <Route path="/payments" element={<AdminPaymentMethods />} />
             <Route path="/delivery" element={<AdminDeliveryZones />} />
+            <Route path="/coupons" element={<AdminCoupons />} />
+            <Route path="/loyalty" element={<AdminLoyalty />} />
             <Route path="/theme" element={<AdminTheme />} />
           </Routes>
         </div>
