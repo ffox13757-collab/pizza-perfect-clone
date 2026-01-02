@@ -190,21 +190,22 @@ export const useApplyCoupon = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ couponId, orderId }: { couponId: string; orderId: string }) => {
-      if (!user) throw new Error('Usuário não autenticado');
+    mutationFn: async ({ couponId, orderId, userId }: { couponId: string; orderId?: string; userId?: string }) => {
+      const targetUserId = userId || user?.id;
+      if (!targetUserId) throw new Error('Usuário não autenticado');
 
-      // Registrar uso do cupom
+      // Register coupon use
       const { error: useError } = await supabase
         .from('coupon_uses')
         .insert({
           coupon_id: couponId,
-          user_id: user.id,
-          order_id: orderId,
+          user_id: targetUserId,
+          order_id: orderId || null,
         });
 
       if (useError) throw useError;
 
-      // Incrementar contador de usos manualmente
+      // Increment uses count
       const { data: coupon } = await supabase
         .from('coupons')
         .select('uses_count')
