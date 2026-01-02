@@ -3,14 +3,18 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, Loader2, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { PaymentSelector } from '@/components/checkout/PaymentSelector';
 import { DeliverySelector } from '@/components/checkout/DeliverySelector';
+import { CouponInput } from '@/components/checkout/CouponInput';
 import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
 import { DeliveryZone } from '@/hooks/useDeliveryZones';
+import { Coupon, useApplyCoupon } from '@/hooks/useCoupons';
+import { useEarnPoints } from '@/hooks/useLoyalty';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const defaultPizzaImage = 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=100&h=100&fit=crop';
@@ -19,11 +23,15 @@ export default function CartPage() {
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
   const { data: settings } = useSiteSettings();
   const { data: paymentMethods, isLoading: methodsLoading } = usePaymentMethods();
+  const { user } = useAuth();
+  const applyCoupon = useApplyCoupon();
+  const earnPoints = useEarnPoints();
   
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
   const [changeFor, setChangeFor] = useState('');
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ coupon: Coupon; discount: number } | null>(null);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -32,11 +40,15 @@ export default function CartPage() {
     }).format(price);
   };
 
-  const total = getTotalPrice();
+  const subtotal = getTotalPrice();
   const deliveryFee = orderType === 'pickup' ? 0 : (selectedZone?.delivery_fee || 0);
-  const finalTotal = total + deliveryFee;
+  const discount = appliedCoupon?.discount || 0;
+  const finalTotal = Math.max(0, subtotal + deliveryFee - discount);
 
-  const handleWhatsAppOrder = () => {
+  // Calculate points to be earned (1 point per R$1)
+  const pointsToEarn = Math.floor(finalTotal);
+
+  const handleWhatsAppOrder = async () => {
     if (!selectedPayment) {
       toast.error('Selecione uma forma de pagamento');
       return;
@@ -52,6 +64,34 @@ export default function CartPage() {
       return;
     }
 
+    // Register coupon use if applied
+    if (appliedCoupon && user) {
+      try {
+        await applyCoupon.mutateAsync({
+          couponId: appliedCoupon.coupon.id,
+          userId: user.id,
+        });
+      } catch {
+        // Continue with order even if coupon registration fails
+      }
+    }
+
+    // Earn loyalty points if user is logged in
+    if (user && pointsToEarn > 0) {
+      try {
+        await earnPoints.mutateAsync({
+          userId: user.id,
+          points: pointsToEarn,
+          description: `Pedido de ${formatPrice(finalTotal)}`,
+        });
+        toast.success(`🎉 Você ganhou ${pointsToEarn} pontos de fidelidade!`, {
+          duration: 4000,
+        });
+      } catch {
+        // Continue with order even if points earning fails
+      }
+    }
+
     const orderItems = items.map(
       (item) => `• ${item.quantity}x ${item.product.name} - ${formatPrice(item.product.price * item.quantity)}`
     ).join('\n');
@@ -65,7 +105,12 @@ export default function CartPage() {
       ? '🏪 *Retirada no local*' 
       : `🚚 *Entrega - ${selectedZone?.name}*\n⏱️ Tempo estimado: ${selectedZone?.estimated_time_min}-${selectedZone?.estimated_time_max} min`;
 
-    const message = `🍕 *Novo Pedido - ${settings?.site_name || "Mom's Pizza"}*\n\n${orderItems}\n\n${deliveryInfo}\n\n📦 Subtotal: ${formatPrice(total)}\n🚚 Taxa de entrega: ${deliveryFee === 0 ? 'Grátis!' : formatPrice(deliveryFee)}\n\n${paymentInfo}\n\n💰 *Total: ${formatPrice(finalTotal)}*`;
+    let discountInfo = '';
+    if (appliedCoupon) {
+      discountInfo = `\n🏷️ Cupom: ${appliedCoupon.coupon.code} (-${formatPrice(discount)})`;
+    }
+
+    const message = `🍕 *Novo Pedido - ${settings?.site_name || "Mom's Pizza"}*\n\n${orderItems}\n\n${deliveryInfo}\n\n📦 Subtotal: ${formatPrice(subtotal)}\n🚚 Taxa de entrega: ${deliveryFee === 0 ? 'Grátis!' : formatPrice(deliveryFee)}${discountInfo}\n\n${paymentInfo}\n\n💰 *Total: ${formatPrice(finalTotal)}*`;
     
     const whatsappUrl = `https://wa.me/${settings?.whatsapp || '5511999999999'}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -224,7 +269,7 @@ export default function CartPage() {
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-medium">{formatPrice(total)}</span>
+                      <span className="font-medium">{formatPrice(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
@@ -242,6 +287,29 @@ export default function CartPage() {
                       <p className="text-xs text-muted-foreground bg-muted p-2 rounded-lg">
                         ⏱️ {selectedZone.estimated_time_min}-{selectedZone.estimated_time_max} min
                       </p>
+                    )}
+
+                    {/* Coupon Input */}
+                    <CouponInput
+                      orderTotal={subtotal}
+                      appliedCoupon={appliedCoupon}
+                      onApply={setAppliedCoupon}
+                    />
+
+                    {/* Discount line */}
+                    {appliedCoupon && (
+                      <div className="flex justify-between text-sm text-primary">
+                        <span>Desconto ({appliedCoupon.coupon.code})</span>
+                        <span className="font-medium">-{formatPrice(discount)}</span>
+                      </div>
+                    )}
+
+                    {/* Points to earn */}
+                    {user && pointsToEarn > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/10 p-2 rounded-lg">
+                        <Star className="h-3 w-3 text-primary" />
+                        <span>Você ganhará <strong className="text-primary">{pointsToEarn} pontos</strong> com este pedido!</span>
+                      </div>
                     )}
                   </div>
 

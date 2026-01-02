@@ -177,21 +177,29 @@ export const useEarnPoints = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ orderId, orderTotal }: { orderId: string; orderTotal: number }) => {
-      if (!user) throw new Error('Usuário não autenticado');
+    mutationFn: async ({ orderId, orderTotal, userId, points, description }: { 
+      orderId?: string; 
+      orderTotal?: number;
+      userId?: string;
+      points?: number;
+      description?: string;
+    }) => {
+      const targetUserId = userId || user?.id;
+      if (!targetUserId) throw new Error('Usuário não autenticado');
 
-      // Calcular pontos (1 ponto para cada R$1 gasto)
-      const pointsEarned = Math.floor(orderTotal);
+      // Calculate points (1 point per R$1 spent)
+      const pointsEarned = points ?? (orderTotal ? Math.floor(orderTotal) : 0);
+      if (pointsEarned <= 0) return 0;
 
-      // Verificar se já existe registro de pontos
+      // Check if loyalty points record exists
       const { data: existing } = await supabase
         .from('loyalty_points')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .maybeSingle();
 
       if (existing) {
-        // Atualizar pontos existentes
+        // Update existing points
         await supabase
           .from('loyalty_points')
           .update({
@@ -199,36 +207,37 @@ export const useEarnPoints = () => {
             lifetime_points: existing.lifetime_points + pointsEarned,
             orders_count: existing.orders_count + 1,
           })
-          .eq('user_id', user.id);
+          .eq('user_id', targetUserId);
       } else {
-        // Criar novo registro
+        // Create new record
         await supabase
           .from('loyalty_points')
           .insert({
-            user_id: user.id,
+            user_id: targetUserId,
             total_points: pointsEarned,
             lifetime_points: pointsEarned,
             orders_count: 1,
           });
       }
 
-      // Registrar transação
+      // Record transaction
       await supabase
         .from('loyalty_transactions')
         .insert({
-          user_id: user.id,
-          order_id: orderId,
+          user_id: targetUserId,
+          order_id: orderId || null,
           points: pointsEarned,
           transaction_type: 'earned',
-          description: `Pontos ganhos no pedido`,
+          description: description || `Pontos ganhos no pedido`,
         });
 
       return pointsEarned;
     },
     onSuccess: (points) => {
-      queryClient.invalidateQueries({ queryKey: ['loyalty-points'] });
-      queryClient.invalidateQueries({ queryKey: ['loyalty-transactions'] });
-      toast.success(`Você ganhou ${points} pontos!`);
+      if (points > 0) {
+        queryClient.invalidateQueries({ queryKey: ['loyalty-points'] });
+        queryClient.invalidateQueries({ queryKey: ['loyalty-transactions'] });
+      }
     },
   });
 };
