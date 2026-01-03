@@ -76,6 +76,11 @@ export interface UserRole {
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedSize?: {
+    id: string;
+    name: string;
+    price: number;
+  };
 }
 
 export type SiteSettings = Record<string, string>;

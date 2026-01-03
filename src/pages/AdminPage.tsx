@@ -16,7 +16,8 @@ import {
   CreditCard,
   MapPin,
   Tag,
-  Trophy
+  Trophy,
+  Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AdminSettings } from '@/components/admin/AdminSettings';
@@ -30,6 +31,7 @@ import { AdminPaymentMethods } from '@/components/admin/AdminPaymentMethods';
 import { AdminDeliveryZones } from '@/components/admin/AdminDeliveryZones';
 import { AdminCoupons } from '@/components/admin/AdminCoupons';
 import { AdminLoyalty } from '@/components/admin/AdminLoyalty';
+import { AdminPromotions } from '@/components/admin/AdminPromotions';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,6 +45,7 @@ const navItems = [
   { path: '/admin/delivery', label: 'Zonas Entrega', icon: MapPin },
   { path: '/admin/coupons', label: 'Cupons', icon: Tag },
   { path: '/admin/loyalty', label: 'Fidelidade', icon: Trophy },
+  { path: '/admin/promotions', label: 'Promoções', icon: Megaphone },
   { path: '/admin/theme', label: 'Tema & Cores', icon: Palette },
 ];
 
@@ -190,6 +193,7 @@ export default function AdminPage() {
             <Route path="/delivery" element={<AdminDeliveryZones />} />
             <Route path="/coupons" element={<AdminCoupons />} />
             <Route path="/loyalty" element={<AdminLoyalty />} />
+            <Route path="/promotions" element={<AdminPromotions />} />
             <Route path="/theme" element={<AdminTheme />} />
           </Routes>
         </div>
