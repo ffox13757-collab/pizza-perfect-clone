@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, MapPin, Search } from 'lucide-react';
+import { Loader2, MapPin, Search, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { fetchAddressByCep } from '@/hooks/useAddresses';
+import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { toast } from 'sonner';
 
 interface AddressData {
@@ -36,11 +37,46 @@ export function AddressModal({ open, onOpenChange, onConfirm }: AddressModalProp
     city: '',
     state: '',
   });
+  const [deliveryAvailable, setDeliveryAvailable] = useState<boolean | null>(null);
+  const [matchedZone, setMatchedZone] = useState<{ name: string; fee: number; time: string } | null>(null);
+
+  const { data: deliveryZones } = useDeliveryZones();
 
   const formatCep = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 5) return numbers;
     return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`;
+  };
+
+  const checkDeliveryZone = (neighborhood: string) => {
+    if (!deliveryZones || deliveryZones.length === 0) {
+      // No zones configured, allow all
+      setDeliveryAvailable(true);
+      setMatchedZone(null);
+      return true;
+    }
+
+    const normalizedNeighborhood = neighborhood.toLowerCase().trim();
+    
+    for (const zone of deliveryZones) {
+      const matchedNeighborhood = zone.neighborhoods.find(
+        (n) => n.toLowerCase().trim() === normalizedNeighborhood
+      );
+      
+      if (matchedNeighborhood) {
+        setDeliveryAvailable(true);
+        setMatchedZone({
+          name: zone.name,
+          fee: zone.delivery_fee,
+          time: `${zone.estimated_time_min}-${zone.estimated_time_max} min`,
+        });
+        return true;
+      }
+    }
+
+    setDeliveryAvailable(false);
+    setMatchedZone(null);
+    return false;
   };
 
   const handleCepSearch = async () => {
@@ -61,6 +97,10 @@ export function AddressModal({ open, onOpenChange, onConfirm }: AddressModalProp
         city: data.city,
         state: data.state,
       });
+      
+      // Check if we deliver to this neighborhood
+      checkDeliveryZone(data.neighborhood);
+      
       setStep('details');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao buscar CEP');
@@ -88,6 +128,21 @@ export function AddressModal({ open, onOpenChange, onConfirm }: AddressModalProp
       city: '',
       state: '',
     });
+    setDeliveryAvailable(null);
+    setMatchedZone(null);
+  };
+
+  const handleReset = () => {
+    setStep('cep');
+    setDeliveryAvailable(null);
+    setMatchedZone(null);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(price);
   };
 
   return (
@@ -103,7 +158,7 @@ export function AddressModal({ open, onOpenChange, onConfirm }: AddressModalProp
         {step === 'cep' ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Informe seu CEP para encontrarmos a loja mais próxima e verificar a disponibilidade de entrega.
+              Informe seu CEP para verificarmos a disponibilidade de entrega na sua região.
             </p>
             
             <div className="flex gap-2">
@@ -139,6 +194,37 @@ export function AddressModal({ open, onOpenChange, onConfirm }: AddressModalProp
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Delivery availability status */}
+            {deliveryAvailable === false ? (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                  <div>
+                    <p className="font-medium text-destructive">
+                      Infelizmente ainda não entregamos na sua região 😢
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Mas você pode retirar seu pedido em nossa loja!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : deliveryAvailable === true && matchedZone ? (
+              <div className="rounded-lg bg-accent/30 border border-accent p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-accent-foreground mt-0.5" />
+                  <div>
+                    <p className="font-medium text-accent-foreground">
+                      Ótimo! Entregamos na sua região! 🎉
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Zona: {matchedZone.name} • Taxa: {formatPrice(matchedZone.fee)} • Tempo: {matchedZone.time}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             <div className="rounded-lg bg-muted p-3">
               <p className="text-sm font-medium">{addressData.street}</p>
               <p className="text-sm text-muted-foreground">
@@ -169,11 +255,11 @@ export function AddressModal({ open, onOpenChange, onConfirm }: AddressModalProp
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep('cep')} className="flex-1">
+              <Button variant="outline" onClick={handleReset} className="flex-1">
                 Alterar CEP
               </Button>
               <Button onClick={handleConfirm} className="flex-1">
-                Confirmar
+                {deliveryAvailable === false ? 'Retirar na Loja' : 'Confirmar'}
               </Button>
             </div>
           </div>
